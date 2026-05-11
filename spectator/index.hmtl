@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0A0A0A">
+<title>Gladio · Spectator</title>
+<meta name="description" content="Follow your athlete live — real-time WKF karate scoring, tatami tracker, and tournament schedule.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E8192C;
+  --rdim:rgba(232,25,44,.15);
+  --rmid:rgba(232,25,44,.28);
+  --bg:#0A0A0A;
+  --bg2:#111111;
+  --bg3:#181818;
+  --sf:#1E1E1E;
+  --sf2:#242424;
+  --bd:rgba(255,255,255,.07);
+  --bd2:rgba(255,255,255,.13);
+  --tx:#F5F5F5;
+  --off:#AAAAAA;
+  --mt:#666666;
+  --green:#22C55E;
+  --amber:#FF9500;
+  --fd:'Barlow Condensed',sans-serif;
+  --fm:'DM Mono',monospace;
+}
+
+html,body{
+  height:100%;
+  width:100%;
+  background:var(--bg);
+  color:var(--tx);
+  font-family:var(--fd);
+  font-weight:400;
+  overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+/* ── LAYOUT ── */
+.app{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  max-width:480px;
+  margin:0 auto;
+  position:relative;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 16px;
+  background:rgba(10,10,10,.94);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+  min-height:52px;
+}
+.tb-brand{
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--tx);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.tb-sword{
+  width:16px;height:16px;
+  fill:var(--red);
+}
+.tb-live{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.08em;
+  color:var(--red);
+  text-transform:uppercase;
+}
+.live-dot{
+  width:7px;height:7px;
+  background:var(--red);
+  border-radius:50%;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── NAV TABS ── */
+.nav{
+  display:flex;
+  background:var(--bg2);
+  border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.tab{
+  flex:1;
+  padding:11px 4px;
+  text-align:center;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--mt);
+  border-bottom:2px solid transparent;
+  cursor:pointer;
+  transition:color .15s, border-color .15s;
+  user-select:none;
+}
+.tab.active{
+  color:var(--red);
+  border-bottom-color:var(--red);
+}
+.tab:hover:not(.active){color:var(--off)}
+
+/* ── SCREENS ── */
+.screen{
+  display:none;
+  flex:1;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:14px 14px 80px;
+  flex-direction:column;
+  gap:12px;
+  -webkit-overflow-scrolling:touch;
+}
+.screen.active{display:flex}
+
+/* ── CARDS ── */
+.card{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  border-radius:10px;
+  overflow:hidden;
+}
+.card-header{
+  background:var(--red);
+  padding:8px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.card-header span{
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#fff;
+}
+
+/* ── ATHLETE HEADER ── */
+.athlete-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px;
+}
+.avatar{
+  width:52px;height:52px;
+  border-radius:50%;
+  background:var(--red);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;
+  color:#fff;
+  flex-shrink:0;
+  letter-spacing:.02em;
+}
+.athlete-name{
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--tx);
+}
+.athlete-sub{
+  font-size:13px;
+  color:var(--off);
+  margin-top:2px;
+  font-weight:500;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  background:var(--rdim);
+  border:1px solid var(--rmid);
+  color:var(--red);
+  font-size:11px;
+  padding:3px 9px;
+  border-radius:20px;
+  margin-top:5px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+/* ── ALERT BANNER ── */
+.alert{
+  background:#1a0a0a;
+  border:1px solid var(--rmid);
+  border-radius:10px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.alert-icon{font-size:18px;flex-shrink:0}
+.alert-text{
+  font-size:14px;
+  font-weight:600;
+  color:#ff6070;
+}
+.alert-text strong{color:var(--red);font-weight:800}
+
+/* ── SCOREBOARD ── */
+.score-body{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  padding:14px 16px 6px;
+  gap:8px;
+}
+.fighter{text-align:center}
+.fighter-name{
+  font-size:16px;
+  font-weight:800;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--tx);
+}
+.fighter-country{
+  font-size:12px;
+  color:var(--mt);
+  margin-top:2px;
+  font-weight:500;
+}
+.score-num{
+  font-size:52px;
+  font-weight:900;
+  line-height:1;
+  font-family:var(--fm);
+  margin-top:4px;
+}
+.score-num.aka{color:var(--red)}
+.score-num.ao{color:var(--tx)}
+.score-sep{
+  font-size:13px;
+  font-weight:700;
+  color:var(--mt);
+  text-align:center;
+}
+.waza-dots{
+  display:flex;
+  justify-content:center;
+  gap:4px;
+  margin-top:6px;
+}
+.wdot{
+  width:9px;height:9px;
+  border-radius:50%;
+}
+.wdot.filled{background:var(--red)}
+.wdot.empty{background:var(--sf2)}
+
+.timer-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 16px 10px;
+  border-top:1px solid var(--bd);
+  margin-top:6px;
+}
+.timer{
+  font-family:var(--fm);
+  font-size:24px;
+  font-weight:500;
+  color:var(--tx);
+  letter-spacing:.04em;
+}
+.senshu-badge{
+  background:var(--red);
+  color:#fff;
+  font-size:10px;
+  padding:3px 8px;
+  border-radius:4px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.round-label{
+  font-size:11px;
+  color:var(--mt);
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.penalty-row{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+  padding:0 14px 14px;
+}
+.pen{
+  background:var(--sf);
+  border:1px solid var(--bd);
+  border-radius:7px;
+  padding:7px 10px;
+  text-align:center;
+}
+.pen-label{
+  font-size:10px;
+  color:var(--red);
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.pen-val{
+  font-size:18px;
+  font-weight:900;
+  color:var(--tx);
+  font-family:var(--fm);
+  margin-top:2px;
+}
+
+/* ── SECTION LABEL ── */
+.section{
+  font-size:11px;
+  font-weight:700;
+  color:var(--mt);
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  padding:4px 2px 0;
+}
+
+/* ── FEED ── */
+.feed{display:flex;flex-direction:column;gap:0}
+.feed-item{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  padding:11px 13px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+}
+.feed-item:first-child{border-radius:10px 10px 0 0}
+.feed-item:last-child{border-radius:0 0 10px 10px}
+.feed-item+.feed-item{border-top:none}
+.feed-ic{
+  width:28px;height:28px;
+  border-radius:6px;
+  background:var(--sf);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;margin-top:1px;
+}
+.feed-ic.r{background:var(--rdim)}
+.feed-ic.y{background:rgba(255,149,0,.12)}
+.feed-title{font-size:14px;font-weight:700;color:var(--tx)}
+.feed-sub{font-size:12px;color:var(--mt);margin-top:2px;font-weight:500}
+.feed-time{font-size:11px;color:var(--mt);margin-left:auto;flex-shrink:0;font-family:var(--fm)}
+
+/* ── TATAMI GRID ── */
+.tatami-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.tatami-card{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  border-radius:10px;
+  padding:12px;
+  cursor:pointer;
+  transition:border-color .15s;
+}
+.tatami-card:hover{border-color:var(--bd2)}
+.tatami-card.watching{
+  border-color:var(--red);
+  background:#160505;
+}
+.tatami-card.span2{grid-column:span 2}
+.t-num{
+  font-size:11px;
+  font-weight:700;
+  color:var(--red);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.t-fighters{font-size:13px;font-weight:800;color:var(--tx);text-transform:uppercase}
+.t-status{font-size:11px;color:var(--mt);margin-top:2px;font-weight:500}
+.t-score{
+  font-size:18px;
+  font-weight:900;
+  color:var(--red);
+  margin-top:5px;
+  font-family:var(--fm);
+  letter-spacing:.04em;
+}
+
+/* ── METRICS ── */
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.metric{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  border-radius:10px;
+  padding:12px;
+  text-align:center;
+}
+.metric-val{
+  font-size:26px;
+  font-weight:900;
+  color:var(--tx);
+  font-family:var(--fm);
+}
+.metric-lbl{
+  font-size:10px;
+  color:var(--mt);
+  margin-top:3px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.metric-delta{
+  font-size:11px;
+  color:var(--red);
+  margin-top:2px;
+  font-weight:600;
+}
+
+/* ── STATS PAIRS ── */
+.pairs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.pair{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  border-radius:10px;
+  padding:12px;
+}
+.pair-lbl{
+  font-size:10px;
+  color:var(--mt);
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.pair-val{
+  font-size:22px;
+  font-weight:900;
+  color:var(--tx);
+}
+.pair-unit{font-size:12px;color:var(--mt);font-weight:500}
+.bar{
+  height:4px;
+  background:var(--sf2);
+  border-radius:2px;
+  margin-top:9px;
+  overflow:hidden;
+}
+.bar-fill{height:100%;border-radius:2px;background:var(--red)}
+
+/* ── SCHEDULE ── */
+.sched-item{
+  background:var(--bg2);
+  border:1px solid var(--bd);
+  border-radius:10px;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.sched-date{width:40px;text-align:center;flex-shrink:0}
+.sched-day{font-size:22px;font-weight:900;color:var(--red)}
+.sched-month{
+  font-size:10px;
+  color:var(--mt);
+  text-transform:uppercase;
+  font-weight:700;
+  letter-spacing:.06em;
+}
+.sched-title{font-size:14px;font-weight:800;color:var(--tx);text-transform:uppercase}
+.sched-loc{font-size:12px;color:var(--mt);margin-top:2px;font-weight:500}
+.pill{
+  font-size:10px;
+  padding:3px 9px;
+  border-radius:20px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.pill.upcoming{
+  background:var(--rdim);
+  color:var(--red);
+  border:1px solid var(--rmid);
+}
+.pill.confirmed{
+  background:rgba(34,197,94,.1);
+  color:var(--green);
+  border:1px solid rgba(34,197,94,.25);
+}
+
+/* ── CTA BUTTON ── */
+.cta{
+  background:var(--red);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  padding:13px;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+  width:100%;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-family:var(--fd);
+  transition:opacity .15s;
+  margin-top:4px;
+}
+.cta:hover{opacity:.88}
+.cta:active{opacity:.75}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:50%;
+  transform:translateX(-50%);
+  width:100%;
+  max-width:480px;
+  background:rgba(10,10,10,.95);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--bd);
+  display:flex;
+  padding:8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index:100;
+}
+.bnav{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  cursor:pointer;
+  padding:4px 0;
+  transition:opacity .15s;
+}
+.bnav:active{opacity:.6}
+.bnav-icon{font-size:18px;line-height:1}
+.bnav-label{
+  font-size:9px;
+  color:var(--mt);
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.bnav.active .bnav-label{color:var(--red)}
+
+/* ── TAGLINE ── */
+.tagline{
+  position:fixed;
+  bottom:calc(52px + max(8px, env(safe-area-inset-bottom)));
+  left:50%;
+  transform:translateX(-50%);
+  font-size:8px;
+  color:#333;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-weight:700;
+  pointer-events:none;
+  white-space:nowrap;
+  z-index:99;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-brand">
+      <svg class="tb-sword" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.5 2L21 8.5L8.5 21L5 22L2 19L3 15.5L14.5 2Z" fill="none" stroke="#E8192C" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M16 6L18 8" stroke="#E8192C" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M3 15.5L8.5 21" stroke="#E8192C" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>
+      </svg>
+      GLADIO
+    </div>
+    <div class="tb-live">
+      <span class="live-dot"></span>
+      LIVE · TATAMI 3
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="tab active" data-screen="live">Live</div>
+    <div class="tab" data-screen="tatamis">Tatamis</div>
+    <div class="tab" data-screen="stats">Stats</div>
+    <div class="tab" data-screen="schedule">Schedule</div>
+  </div>
+
+  <!-- ── SCREEN: LIVE ── -->
+  <div class="screen active" id="live">
+
+    <div class="card">
+      <div class="athlete-row">
+        <div class="avatar" id="avatar-initials">RD</div>
+        <div>
+          <div class="athlete-name" id="athlete-name">Ryo Desmet</div>
+          <div class="athlete-sub" id="athlete-meta">Kumite −75 kg · Shotokan Gent</div>
+          <div class="badge"><span class="live-dot" style="width:6px;height:6px;display:inline-block;margin-right:4px"></span>LIVE — Round of 16</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert" id="alert-banner">
+      <span class="alert-icon">⚡</span>
+      <span class="alert-text"><strong>WAZA-ARI!</strong> Gyaku-zuki to the body — Ryo leads 4:2</span>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Tatami 3 · −75 kg Kumite</span>
+        <span>AKA vs AO</span>
+      </div>
+      <div class="score-body">
+        <div class="fighter">
+          <div class="fighter-name">DESMET</div>
+          <div class="fighter-country">BEL 🇧🇪</div>
+          <div class="score-num aka">4</div>
+          <div class="waza-dots">
+            <span class="wdot filled"></span>
+            <span class="wdot filled"></span>
+            <span class="wdot empty"></span>
+          </div>
+        </div>
+        <div class="score-sep">VS</div>
+        <div class="fighter">
+          <div class="fighter-name">TANAKA</div>
+          <div class="fighter-country">JPN 🇯🇵</div>
+          <div class="score-num ao">2</div>
+          <div class="waza-dots">
+            <span class="wdot filled"></span>
+            <span class="wdot empty"></span>
+            <span class="wdot empty"></span>
+          </div>
+        </div>
+      </div>
+      <div class="timer-row">
+        <span class="timer" id="match-timer">01:23</span>
+        <span class="senshu-badge">SENSHU · DESMET</span>
+        <span class="round-label">R16</span>
+      </div>
+      <div class="penalty-row">
+        <div class="pen">
+          <div class="pen-label">Pen · AKA</div>
+          <div class="pen-val">C1</div>
+        </div>
+        <div class="pen">
+          <div class="pen-label">Pen · AO</div>
+          <div class="pen-val">C2</div>
+        </div>
+        <div class="pen">
+          <div class="pen-label">Category</div>
+          <div class="pen-val" style="font-size:14px;color:var(--off)">−75</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">Match feed</div>
+    <div class="feed">
+      <div class="feed-item">
+        <div class="feed-ic r">🥊</div>
+        <div style="flex:1">
+          <div class="feed-title">Waza-ari — Gyaku-zuki</div>
+          <div class="feed-sub">Body strike confirmed · Score: 4–2</div>
+        </div>
+        <span class="feed-time">1:23</span>
+      </div>
+      <div class="feed-item">
+        <div class="feed-ic y">⚠️</div>
+        <div style="flex:1">
+          <div class="feed-title">Chukoku C2 — Tanaka</div>
+          <div class="feed-sub">Excessive contact · +1 pt to Desmet</div>
+        </div>
+        <span class="feed-time">2:01</span>
+      </div>
+      <div class="feed-item">
+        <div class="feed-ic r">🥊</div>
+        <div style="flex:1">
+          <div class="feed-title">Yuko — Mawashi-geri</div>
+          <div class="feed-sub">Head kick · Not confirmed by all judges</div>
+        </div>
+        <span class="feed-time">2:34</span>
+      </div>
+      <div class="feed-item">
+        <div class="feed-ic r">★</div>
+        <div style="flex:1">
+          <div class="feed-title">SENSHU awarded — Desmet</div>
+          <div class="feed-sub">First scoring technique of the match</div>
+        </div>
+        <span class="feed-time">2:58</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── SCREEN: TATAMIS ── -->
+  <div class="screen" id="tatamis">
+    <div class="alert">
+      <span class="alert-icon">🏟️</span>
+      <span class="alert-text" style="color:var(--off)">6 tatamis active · <strong style="color:var(--tx)">BEL Nationals 2026</strong></span>
+    </div>
+    <div class="section">All tatamis — tap to follow</div>
+    <div class="tatami-grid">
+      <div class="tatami-card watching" onclick="switchToLive()">
+        <div class="t-num">▶ Tatami 1</div>
+        <div class="t-fighters">DESMET vs TANAKA</div>
+        <div class="t-status">−75 kg · Round of 16</div>
+        <div class="t-score">4 – 2</div>
+      </div>
+      <div class="tatami-card">
+        <div class="t-num">Tatami 2</div>
+        <div class="t-fighters">PEETERS vs MÜLLER</div>
+        <div class="t-status">−67 kg · Semifinal</div>
+        <div class="t-score">6 – 3</div>
+      </div>
+      <div class="tatami-card">
+        <div class="t-num">Tatami 3</div>
+        <div class="t-fighters">DUPONT vs GARCIA</div>
+        <div class="t-status">+84 kg · Final</div>
+        <div class="t-score">0 – 0</div>
+      </div>
+      <div class="tatami-card">
+        <div class="t-num">Tatami 4</div>
+        <div class="t-fighters">CLAES vs MORITA</div>
+        <div class="t-status">−60 kg · QF</div>
+        <div class="t-score" style="color:var(--off)">2 – 5</div>
+      </div>
+      <div class="tatami-card span2">
+        <div class="t-num">Tatami 5 · KATA</div>
+        <div class="t-fighters">VAN DEN BERG — Kanku-Dai</div>
+        <div class="t-status">Female Individual · Preliminary</div>
+        <div class="t-score" style="font-size:13px;color:var(--mt);font-family:var(--fd)">Judging in progress…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: STATS ── -->
+  <div class="screen" id="stats">
+    <div class="section">Today's tournament</div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-val">3</div>
+        <div class="metric-lbl">Matches</div>
+        <div class="metric-delta">3 wins</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">14</div>
+        <div class="metric-lbl">Pts scored</div>
+        <div class="metric-delta">6 conceded</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val">1</div>
+        <div class="metric-lbl">Ippon</div>
+        <div class="metric-delta">4 waza-ari</div>
+      </div>
+    </div>
+
+    <div class="section">Season record</div>
+    <div class="pairs">
+      <div class="pair">
+        <div class="pair-lbl">Win rate</div>
+        <div class="pair-val">78 <span class="pair-unit">%</span></div>
+        <div class="bar"><div class="bar-fill" style="width:78%"></div></div>
+      </div>
+      <div class="pair">
+        <div class="pair-lbl">Tournaments</div>
+        <div class="pair-val">9</div>
+        <div class="bar"><div class="bar-fill" style="width:60%"></div></div>
+      </div>
+    </div>
+    <div class="pairs">
+      <div class="pair">
+        <div class="pair-lbl">Gold medals</div>
+        <div class="pair-val">3 <span class="pair-unit">🥇</span></div>
+      </div>
+      <div class="pair">
+        <div class="pair-lbl">BEL ranking</div>
+        <div class="pair-val">#4 <span class="pair-unit" style="font-size:14px">−75</span></div>
+      </div>
+    </div>
+    <div class="pairs">
+      <div class="pair">
+        <div class="pair-lbl">Ippons</div>
+        <div class="pair-val">11</div>
+      </div>
+      <div class="pair">
+        <div class="pair-lbl">Waza-ari</div>
+        <div class="pair-val">34</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: SCHEDULE ── -->
+  <div class="screen" id="schedule">
+    <div class="section">Upcoming tournaments</div>
+
+    <div class="sched-item">
+      <div class="sched-date">
+        <div class="sched-day">14</div>
+        <div class="sched-month">Jun</div>
+      </div>
+      <div style="flex:1">
+        <div class="sched-title">BEL Open — Antwerpen</div>
+        <div class="sched-loc">Sportpaleis · −75 kg Kumite</div>
+      </div>
+      <span class="pill upcoming">Entered</span>
+    </div>
+
+    <div class="sched-item">
+      <div class="sched-date">
+        <div class="sched-day">05</div>
+        <div class="sched-month">Jul</div>
+      </div>
+      <div style="flex:1">
+        <div class="sched-title">EKF Junior Cup</div>
+        <div class="sched-loc">Sofia, Bulgaria · Team + Individual</div>
+      </div>
+      <span class="pill upcoming">Entered</span>
+    </div>
+
+    <div class="sched-item">
+      <div class="sched-date">
+        <div class="sched-day">19</div>
+        <div class="sched-month">Jul</div>
+      </div>
+      <div style="flex:1">
+        <div class="sched-title">WKF World Cadet — Valencia</div>
+        <div class="sched-loc">Palau Velòdrom · Qualification pending</div>
+      </div>
+      <span class="pill confirmed">Qualified ✓</span>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="bnav active" data-screen="live">
+      <span class="bnav-icon">📡</span>
+      <span class="bnav-label">Live</span>
+    </div>
+    <div class="bnav" data-screen="tatamis">
+      <span class="bnav-icon">🏟️</span>
+      <span class="bnav-label">Tatamis</span>
+    </div>
+    <div class="bnav" data-screen="stats">
+      <span class="bnav-icon">📊</span>
+      <span class="bnav-label">Stats</span>
+    </div>
+    <div class="bnav" data-screen="schedule">
+      <span class="bnav-icon">📅</span>
+      <span class="bnav-label">Schedule</span>
+    </div>
+  </div>
+
+  <div class="tagline">Veni · Vidi · Vicerunt</div>
+</div>
+
+<script>
+// ── Tab navigation ──
+const tabs = document.querySelectorAll('.tab');
+const bnaves = document.querySelectorAll('.bnav');
+const screens = document.querySelectorAll('.screen');
+
+function showScreen(id) {
+  screens.forEach(s => s.classList.remove('active'));
+  tabs.forEach(t => t.classList.remove('active'));
+  bnaves.forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`.tab[data-screen="${id}"]`).classList.add('active');
+  document.querySelector(`.bnav[data-screen="${id}"]`).classList.add('active');
+}
+
+tabs.forEach(t => t.addEventListener('click', () => showScreen(t.dataset.screen)));
+bnaves.forEach(b => b.addEventListener('click', () => showScreen(b.dataset.screen)));
+
+function switchToLive() { showScreen('live'); }
+
+// ── Live countdown timer (demo) ──
+let seconds = 83; // 1:23
+const timerEl = document.getElementById('match-timer');
+setInterval(() => {
+  if (seconds > 0) seconds--;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}, 1000);
+
+// ── BroadcastChannel listener (real sync when hosted with main app) ──
+if ('BroadcastChannel' in window) {
+  const ch = new BroadcastChannel('gladio-spectator');
+  ch.onmessage = (e) => {
+    const d = e.data;
+    // Future: update scoreboard, feed, etc. from live data
+    console.log('[Gladio Spectator] live update:', d);
+  };
+}
+</script>
+</body>
+</html>
